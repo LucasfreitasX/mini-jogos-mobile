@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Adivinhe o Número</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d1a;
+      --card-bg: #16162a;
+      --accent: #4ecdc4;
+      --text: #f0f0f8;
+      --muted: #8888aa;
+      --green: #4ecdc4;
+      --red: #ff4757;
+      --warm: #ff6b35;
+      --cold: #4ea8de;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Campo estrelado animado */
+    .stars-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 4s infinite;
+    }
+
+    .star.small {
+      width: 1px;
+      height: 1px;
+      animation-duration: 2s;
+    }
+
+    .star.medium {
+      width: 2px;
+      height: 2px;
+      animation-duration: 3s;
+    }
+
+    .star.large {
+      width: 3px;
+      height: 3px;
+      animation-duration: 4s;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* Tela de carregamento */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--muted);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    nav { 
+      width: 100%; 
+      max-width: 580px; 
+      margin-bottom: 1.5rem;
+      animation: slideDown 0.8s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    nav a::before {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover { 
+      color: var(--accent);
+      transform: translateX(5px);
+    }
+    
+    nav a:hover::before {
+      width: 100%;
+    }
+
+    h1 {
+      font-family: 'Bangers', cursive;
+      font-size: 3rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+      margin-bottom: 0.25rem;
+      animation: slideDown 0.8s ease-out 0.2s both;
+      text-shadow: 0 0 20px rgba(78,205,196,0.5);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      animation: slideDown 0.8s ease-out 0.4s both;
+    }
+
+    .game-box {
+      background: var(--card-bg);
+      border-radius: 20px;
+      border: 2px solid var(--accent);
+      padding: 2rem 1.5rem;
+      max-width: 580px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      animation: slideUp 0.8s ease-out 0.6s both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .game-box::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(78,205,196,0.1), transparent);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Thermometer */
+    .thermo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      animation: slideUp 0.8s ease-out 0.8s both;
+    }
+
+    .thermo-bar {
+      width: 280px;
+      height: 24px;
+      border-radius: 50px;
+      background: linear-gradient(to right, var(--cold), #4a90e2, #a855f7, #ff6b35, var(--warm));
+      position: relative;
+      border: 2px solid #333355;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .thermo-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .thermo-cursor {
+      position: absolute;
+      top: -6px;
+      width: 8px;
+      height: 36px;
+      background: linear-gradient(to bottom, #fff, #4ecdc4);
+      border-radius: 4px;
+      transform: translateX(-50%);
+      transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      box-shadow: 
+        0 0 15px rgba(255,255,255,0.8),
+        0 0 30px rgba(78,205,196,0.6);
+      z-index: 2;
+    }
+
+    .thermo-cursor.hot {
+      background: linear-gradient(to bottom, #fff, #ff6b35);
+      box-shadow: 
+        0 0 15px rgba(255,107,53,0.8),
+        0 0 30px rgba(255,107,53,0.6);
+      animation: cursorGlow 1s ease-in-out infinite alternate;
+    }
+
+    .thermo-cursor.warm {
+      background: linear-gradient(to bottom, #fff, #f7c948);
+      box-shadow: 
+        0 0 12px rgba(247,201,72,0.6),
+        0 0 25px rgba(247,201,72,0.4);
+    }
+
+    .thermo-cursor.cold {
+      background: linear-gradient(to bottom, #fff, #4ea8de);
+      box-shadow: 
+        0 0 12px rgba(78,168,222,0.6),
+        0 0 25px rgba(78,168,222,0.4);
+    }
+
+    .thermo-cursor.freezing {
+      background: linear-gradient(to bottom, #fff, #4ea8de);
+      box-shadow: 
+        0 0 20px rgba(78,168,222,0.8),
+        0 0 40px rgba(78,168,222,0.6);
+      animation: cursorGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes cursorGlow {
+      from { box-shadow: 0 0 15px currentColor, 0 0 30px currentColor; }
+      to { box-shadow: 0 0 25px currentColor, 0 0 50px currentColor; }
+    }
+
+    .thermo-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      animation: slideUp 0.8s ease-out 1s both;
+    }
+
+    .thermo-ends {
+      width: 280px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      animation: slideUp 0.8s ease-out 1.2s both;
+    }
+
+    /* Hint display */
+    .hint-bubble {
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 0.75rem 2rem;
+      border-radius: 50px;
+      min-width: 200px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      letter-spacing: 1px;
+      animation: slideUp 0.8s ease-out 1.4s both;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hint-bubble.bounce {
+      animation: bubbleBounce 0.6s ease-out;
+    }
+
+    @keyframes bubbleBounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.15); }
+      60% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+
+    .hint-bubble.start { 
+      background: #1e1e38; 
+      color: var(--muted);
+      border: 2px solid #333355;
+    }
+    
+    .hint-bubble.hot { 
+      background: rgba(255,107,53,0.2); 
+      color: var(--warm); 
+      border: 2px solid var(--warm);
+      box-shadow: 0 0 30px rgba(255,107,53,0.3);
+      animation: hotPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes hotPulse {
+      0%, 100% { 
+        box-shadow: 0 0 30px rgba(255,107,53,0.3);
+        transform: scale(1);
+      }
+      50% { 
+        box-shadow: 0 0 50px rgba(255,107,53,0.5);
+        transform: scale(1.02);
+      }
+    }
+    
+    .hint-bubble.warm { 
+      background: rgba(247,201,72,0.15); 
+      color: #f7c948; 
+      border: 2px solid #f7c948;
+      box-shadow: 0 0 20px rgba(247,201,72,0.2);
+    }
+    
+    .hint-bubble.cold { 
+      background: rgba(78,168,222,0.15); 
+      color: var(--cold); 
+      border: 2px solid var(--cold);
+      box-shadow: 0 0 20px rgba(78,168,222,0.2);
+    }
+    
+    .hint-bubble.freezing { 
+      background: rgba(78,168,222,0.25); 
+      color: #a8d8ff; 
+      border: 2px solid var(--cold);
+      box-shadow: 0 0 30px rgba(78,168,222,0.3);
+      animation: coldShake 0.5s ease-in-out infinite;
+    }
+
+    @keyframes coldShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+    
+    .hint-bubble.win { 
+      background: rgba(78,205,196,0.2); 
+      color: var(--green); 
+      border: 2px solid var(--green);
+      box-shadow: 0 0 40px rgba(78,205,196,0.5);
+      animation: winPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes winPulse {
+      0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 0 40px rgba(78,205,196,0.5);
+      }
+      50% { 
+        transform: scale(1.05);
+        box-shadow: 0 0 60px rgba(78,205,196,0.8);
+      }
+    }
+
+    /* Input area */
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      animation: slideUp 0.8s ease-out 1.6s both;
+    }
+
+    .num-input {
+      width: 110px;
+      padding: 0.7rem 1rem;
+      border-radius: 12px;
+      border: 2px solid #333355;
+      background: #1e1e38;
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      text-align: center;
+      outline: none;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .num-input::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, rgba(78,205,196,0.3), transparent);
+      border-radius: 50%;
+      transition: all 0.4s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    .num-input:focus { 
+      border-color: var(--accent);
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(78,205,196,0.3);
+    }
+
+    .num-input:focus::before {
+      width: 100%;
+      height: 100%;
+    }
+
+    .num-input.error {
+      border-color: #ff4757;
+      animation: shake 0.5s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .guess-btn {
+      padding: 0.7rem 1.8rem;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent);
+      color: #001a1a;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .guess-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+      transition: all 0.5s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    .guess-btn:hover { 
+      filter: brightness(1.15); 
+      transform: scale(1.04) translateY(-2px);
+      box-shadow: 0 10px 25px rgba(78,205,196,0.4);
+    }
+
+    .guess-btn:hover::before {
+      width: 300%;
+      height: 300%;
+    }
+
+    .guess-btn:disabled { 
+      opacity: 0.4; 
+      cursor: default; 
+      transform: scale(0.95);
+    }
+
+    .guess-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Attempts */
+    .attempts-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      animation: slideUp 0.8s ease-out 1.8s both;
+    }
+
+    .attempts-count {
+      font-family: 'Bangers', cursive;
+      font-size: 1.8rem;
+      color: var(--text);
+      line-height: 1;
+      transition: all 0.3s ease;
+    }
+
+    .attempts-count.pulse {
+      animation: countPulse 0.6s ease-out;
+    }
+
+    @keyframes countPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    /* Guess history */
+    .history-wrap {
+      width: 100%;
+      animation: slideUp 0.8s ease-out 2s both;
+    }
+
+    .history-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .guesses-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .guess-chip {
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      animation: chipSlideIn 0.5s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .guess-chip::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .guess-chip:hover::before {
+      left: 100%;
+    }
+
+    .guess-chip.hot { 
+      background: rgba(255,107,53,0.25); 
+      color: var(--warm); 
+      border: 1.5px solid var(--warm);
+      box-shadow: 0 4px 15px rgba(255,107,53,0.3);
+    }
+    
+    .guess-chip.warm { 
+      background: rgba(247,201,72,0.2); 
+      color: #f7c948; 
+      border: 1.5px solid #f7c948;
+      box-shadow: 0 4px 15px rgba(247,201,72,0.2);
+    }
+    
+    .guess-chip.cold { 
+      background: rgba(78,168,222,0.2); 
+      color: var(--cold); 
+      border: 1.5px solid var(--cold);
+      box-shadow: 0 4px 15px rgba(78,168,222,0.2);
+    }
+    
+    .guess-chip.freezing { 
+      background: rgba(78,168,222,0.1); 
+      color: #a8d8ff; 
+      border: 1.5px solid var(--cold);
+      box-shadow: 0 4px 15px rgba(78,168,222,0.3);
+    }
+
+    @keyframes chipSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    /* Range slider */
+    .range-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      animation: slideUp 0.8s ease-out 2.2s both;
+    }
+
+    .difficulty-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+    }
+
+    .diff-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .diff-btn {
+      padding: 5px 16px;
+      border-radius: 50px;
+      border: 1.5px solid #333355;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .diff-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.3s ease;
+      z-index: -1;
+    }
+
+    .diff-btn:hover, .diff-btn.active { 
+      border-color: var(--accent); 
+      color: var(--text);
+      transform: translateY(-2px);
+    }
+
+    .diff-btn.active::before {
+      width: 100%;
+    }
+
+    .new-game-btn {
+      padding: 0.6rem 1.8rem;
+      border-radius: 50px;
+      border: 2px solid #333355;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .new-game-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: var(--accent);
+      border-radius: 50%;
+      transition: all 0.4s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    .new-game-btn:hover { 
+      border-color: var(--accent); 
+      color: var(--text);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(78,205,196,0.3);
+    }
+
+    .new-game-btn:hover::before {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Partículas de efeito */
+    .heat-particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: heatFloat 2s ease-out forwards;
+    }
+
+    @keyframes heatFloat {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0);
+      }
+    }
+
+    /* Range slider */
+    .range-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .difficulty-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+    }
+
+    .diff-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .diff-btn {
+      padding: 5px 16px;
+      border-radius: 50px;
+      border: 1.5px solid #333355;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .diff-btn:hover, .diff-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    .new-game-btn {
+      padding: 0.6rem 1.8rem;
+      border-radius: 50px;
+      border: 2px solid #333355;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .new-game-btn:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <script src="pwa.js" defer></script>
+</head>
+<!-- Tela de carregamento -->
+<div class="loading-screen" id="loading">
+  <div class="loader"></div>
+  <div class="loading-text">CARREGANDO...</div>
+</div>
+
+<!-- Campo estrelado animado -->
+<div class="stars-bg" id="stars"></div>
+
+<body>
+  <nav><a href="index.html">← Voltar ao Menu</a></nav>
+  <h1>🔢 Adivinhe o Número</h1>
+  <p class="subtitle">Um número está escondido. Use as dicas quente/frio!</p>
+
+  <div class="game-box">
+    <!-- Difficulty -->
+    <div>
+      <div class="difficulty-label" style="text-align:center;margin-bottom:8px;">Dificuldade</div>
+      <div class="diff-buttons">
+        <button class="diff-btn active" onclick="setDiff(50, this)">Fácil (1–50)</button>
+        <button class="diff-btn" onclick="setDiff(100, this)">Normal (1–100)</button>
+        <button class="diff-btn" onclick="setDiff(200, this)">Difícil (1–200)</button>
+      </div>
+    </div>
+
+    <!-- Thermometer -->
+    <div class="thermo-wrap">
+      <div class="thermo-label">Termômetro</div>
+      <div class="thermo-bar">
+        <div class="thermo-cursor" id="thermo-cursor" style="left:50%"></div>
+      </div>
+      <div class="thermo-ends">
+        <span>❄️ Frio</span>
+        <span>🔥 Quente</span>
+      </div>
+    </div>
+
+    <!-- Hint -->
+    <div class="hint-bubble start" id="hint-bubble">
+      Adivinhe um número!
+    </div>
+
+    <!-- Input -->
+    <div class="input-row">
+      <input class="num-input" type="number" id="num-input" min="1" max="100" placeholder="?" />
+      <button class="guess-btn" id="guess-btn" onclick="makeGuess()">Tentar</button>
+    </div>
+
+    <!-- Attempts -->
+    <div class="attempts-row">
+      <span class="attempts-count" id="attempts-count">0</span>
+      <span>tentativa(s)</span>
+    </div>
+
+    <!-- History -->
+    <div class="history-wrap">
+      <div class="history-title">Tentativas anteriores</div>
+      <div class="guesses-grid" id="guesses-grid"></div>
+    </div>
+
+    <button class="new-game-btn" onclick="newGame()">🔄 Novo Jogo</button>
+  </div>
+
+<script>
+let secret = 0;
+let maxNum = 100;
+let attempts = 0;
+let gameOver = false;
+let guessHistory = [];
+
+function setDiff(max, btn) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  maxNum = max;
+  document.getElementById('num-input').max = max;
+  newGame();
+}
+
+function newGame() {
+  secret = Math.floor(Math.random() * maxNum) + 1;
+  attempts = 0;
+  gameOver = false;
+  guessHistory = [];
+
+  document.getElementById('attempts-count').textContent = '0';
+  document.getElementById('guesses-grid').innerHTML = '';
+  document.getElementById('num-input').value = '';
+  document.getElementById('num-input').disabled = false;
+  document.getElementById('guess-btn').disabled = false;
+  document.getElementById('num-input').min = 1;
+  document.getElementById('num-input').max = maxNum;
+
+  const hint = document.getElementById('hint-bubble');
+  hint.textContent = `Adivinhe entre 1 e ${maxNum}!`;
+  hint.className = 'hint-bubble start';
+
+  document.getElementById('thermo-cursor').style.left = '50%';
+}
+
+function makeGuess() {
+  if (gameOver) return;
+
+  const input = document.getElementById('num-input');
+  const guess = parseInt(input.value);
+
+  if (isNaN(guess) || guess < 1 || guess > maxNum) {
+    input.style.borderColor = '#ff4757';
+    setTimeout(() => { input.style.borderColor = ''; }, 600);
+    return;
+  }
+
+  attempts++;
+  document.getElementById('attempts-count').textContent = attempts;
+
+  const diff = Math.abs(guess - secret);
+  const range = maxNum;
+  const pct = diff / range;
+
+  let hintText, hintClass, chipClass;
+  let thermoPct;
+
+  if (guess === secret) {
+    hintText = `🎉 Acertou em ${attempts} tentativa${attempts > 1 ? 's' : ''}!`;
+    hintClass = 'win';
+    thermoPct = 100;
+    gameOver = true;
+    input.disabled = true;
+    document.getElementById('guess-btn').disabled = true;
+  } else {
+    const direction = guess < secret ? '↑ mais alto' : '↓ mais baixo';
+
+    if (pct <= 0.05) {
+      hintText = `🔥🔥 QUEIMANDO! (${direction})`;
+      hintClass = 'hot';
+      chipClass = 'chip-hot';
+      thermoPct = 95;
+    } else if (pct <= 0.15) {
+      hintText = `🔥 Muito quente! (${direction})`;
+      hintClass = 'hot';
+      chipClass = 'chip-hot';
+      thermoPct = 75;
+    } else if (pct <= 0.3) {
+      hintText = `🌡️ Morno... (${direction})`;
+      hintClass = 'warm';
+      chipClass = 'chip-warm';
+      thermoPct = 50;
+    } else if (pct <= 0.5) {
+      hintText = `❄️ Frio! (${direction})`;
+      hintClass = 'cold';
+      chipClass = 'chip-cold';
+      thermoPct = 25;
+    } else {
+      hintText = `🧊 Congelando! (${direction})`;
+      hintClass = 'freezing';
+      chipClass = 'chip-freezing';
+      thermoPct = 5;
+    }
+  }
+
+  const hint = document.getElementById('hint-bubble');
+  hint.textContent = hintText;
+  hint.className = 'hint-bubble ' + hintClass;
+
+  document.getElementById('thermo-cursor').style.left = thermoPct + '%';
+
+  if (chipClass) {
+    const chip = document.createElement('span');
+    chip.className = 'guess-chip ' + chipClass;
+    chip.textContent = guess;
+    document.getElementById('guesses-grid').appendChild(chip);
+    guessHistory.push(guess);
+  }
+
+  input.value = '';
+  input.focus();
+}
+
+// Enter key
+document.getElementById('num-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') makeGuess();
+});
+
+// Criar campo estrelado
+function createStars() {
+  const starsContainer = document.getElementById('stars');
+  const numberOfStars = 80;
+
+  for (let i = 0; i < numberOfStars; i++) {
+    const star = document.createElement('div');
+    star.className = `star ${['small', 'medium', 'large'][Math.floor(Math.random() * 3)]}`;
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 4 + 's';
+    starsContainer.appendChild(star);
+  }
+}
+
+// Criar partículas de calor
+function createHeatParticles(x, y, intensity = 1) {
+  const colors = ['#ff6b35', '#f7c948', '#4ecdc4'];
+  const particleCount = Math.floor(5 * intensity);
+  
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'heat-particle';
+    particle.style.left = (x + Math.random() * 20 - 10) + 'px';
+    particle.style.top = (y + Math.random() * 20 - 10) + 'px';
+    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.animationDuration = (1.5 + Math.random() * 1) + 's';
+    
+    document.body.appendChild(particle);
+    
+    setTimeout(() => {
+      particle.remove();
+    }, 2500);
+  }
+}
+
+// Animações aprimoradas para dicas
+function animateHint(hint, hintClass) {
+  const hintBubble = document.getElementById('hint-bubble');
+  hintBubble.classList.add('bounce');
+  
+  setTimeout(() => {
+    hintBubble.classList.remove('bounce');
+    hintBubble.classList.add(hintClass);
+  }, 100);
+}
+
+// Animações aprimoradas para contagem de tentativas
+function animateAttempts() {
+  const countElement = document.getElementById('attempts-count');
+  countElement.classList.add('pulse');
+  
+  setTimeout(() => {
+    countElement.classList.remove('pulse');
+  }, 600);
+}
+
+// Animações aprimoradas para termômetro
+function animateThermo(cursor, hintClass) {
+  const cursor = document.getElementById('thermo-cursor');
+  cursor.classList.remove('hot', 'warm', 'cold', 'freezing');
+  
+  if (hintClass) {
+    cursor.classList.add(hintClass.replace('hint-', ''));
+  }
+}
+
+// Funções modificadas com animações
+const originalSetDiff = setDiff;
+setDiff = function(max, btn) {
+  originalSetDiff(max, btn);
+  createHeatParticles(window.innerWidth / 2, window.innerHeight / 2, 0.5);
+  newGame();
+};
+
+const originalNewGame = newGame;
+newGame = function() {
+  originalNewGame();
+  
+  // Resetar animações
+  const cursor = document.getElementById('thermo-cursor');
+  cursor.classList.remove('hot', 'warm', 'cold', 'freezing');
+  cursor.style.left = '50%';
+  
+  // Limpar histórico com animação
+  const grid = document.getElementById('guesses-grid');
+  grid.style.opacity = '0';
+  
+  setTimeout(() => {
+    grid.innerHTML = '';
+    grid.style.opacity = '1';
+  }, 300);
+};
+
+const originalMakeGuess = makeGuess;
+makeGuess = function() {
+  const input = document.getElementById('num-input');
+  const guess = parseInt(input.value);
+  
+  if (isNaN(guess) || guess < 1 || guess > maxNum) {
+    input.classList.add('error');
+    createHeatParticles(
+      input.getBoundingClientRect().left + input.offsetWidth / 2,
+      input.getBoundingClientRect().top + input.offsetHeight / 2,
+      1
+    );
+    
+    setTimeout(() => {
+      input.classList.remove('error');
+    }, 600);
+    return;
+  }
+  
+  originalMakeGuess();
+  animateAttempts();
+  
+  // Criar partículas baseado na proximidade
+  const rect = input.getBoundingClientRect();
+  const diff = Math.abs(guess - secret);
+  const intensity = 1 - (diff / maxNum);
+  
+  if (guess !== secret) {
+    createHeatParticles(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+      intensity
+    );
+  }
+};
+
+// Inicialização
+window.addEventListener('load', function() {
+  createStars();
+  
+  // Esconder tela de carregamento após 1 segundo
+  setTimeout(() => {
+    const loadingScreen = document.getElementById('loading');
+    loadingScreen.classList.add('hidden');
+  }, 1000);
+});
+
+newGame();
+</script>
+</body>
+</html>

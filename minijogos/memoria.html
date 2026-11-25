@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Jogo da Memória</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d1a;
+      --card-bg: #16162a;
+      --accent: #a855f7;
+      --text: #f0f0f8;
+      --muted: #8888aa;
+      --green: #4ecdc4;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    nav { width: 100%; max-width: 600px; margin-bottom: 1.5rem; }
+    nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; letter-spacing: 1px; transition: color 0.2s; }
+    nav a:hover { color: var(--accent); }
+
+    h1 { font-family: 'Bangers', cursive; font-size: 2.8rem; color: var(--accent); letter-spacing: 3px; margin-bottom: 1rem; }
+
+    .stats {
+      display: flex;
+      gap: 2.5rem;
+      margin-bottom: 1.25rem;
+      align-items: center;
+    }
+    .stat { text-align: center; }
+    .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+    .stat-val { font-family: 'Bangers', cursive; font-size: 2.2rem; color: var(--text); line-height: 1.1; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .card {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease;
+    }
+
+    .card.flipped, .card.matched {
+      transform: rotateY(180deg);
+    }
+
+    .card.matched { cursor: default; }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .card-back {
+      background: #1e1e38;
+      border: 2px solid #333355;
+      font-size: 1.5rem;
+      color: var(--muted);
+      transition: border-color 0.2s;
+    }
+
+    .card:hover:not(.flipped):not(.matched) .card-back {
+      border-color: var(--accent);
+    }
+
+    .card-front {
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      font-size: 2rem;
+      transform: rotateY(180deg);
+    }
+
+    .card.matched .card-front {
+      border-color: var(--green);
+      background: rgba(78,205,196,0.1);
+    }
+
+    .message {
+      margin-top: 1.25rem;
+      font-family: 'Bangers', cursive;
+      font-size: 2rem;
+      color: var(--green);
+      letter-spacing: 2px;
+      min-height: 2.5rem;
+      text-align: center;
+    }
+
+    .btn-row { margin-top: 1rem; display: flex; gap: 0.75rem; }
+    .btn {
+      padding: 0.6rem 1.8rem;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 0.92rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: filter 0.2s, transform 0.15s;
+    }
+    .btn:hover { filter: brightness(1.15); transform: scale(1.04); }
+
+    .diff-buttons { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center; }
+    .diff-btn {
+      padding: 5px 14px;
+      border-radius: 50px;
+      border: 1.5px solid #333355;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 600;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .diff-btn:hover, .diff-btn.active { border-color: var(--accent); color: var(--text); background: rgba(168,85,247,0.1); }
+
+    @media (max-width: 460px) {
+      .board { gap: 8px; max-width: 340px; }
+      .card-front { font-size: 1.6rem; }
+    }
+  </style>
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <script src="pwa.js" defer></script>
+</head>
+<body>
+  <nav><a href="index.html">← Voltar ao Menu</a></nav>
+  <h1>Jogo da Memória</h1>
+
+  <div class="diff-buttons">
+    <button class="diff-btn active" onclick="setMode(8, this)">Fácil (8 pares)</button>
+    <button class="diff-btn" onclick="setMode(12, this)">Normal (12 pares)</button>
+    <button class="diff-btn" onclick="setMode(16, this)">Difícil (16 pares)</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Tentativas</div>
+      <div class="stat-val" id="attempts">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Pares</div>
+      <div class="stat-val" id="pairs">0 / 8</div>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div class="message" id="message"></div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="startGame()">Novo Jogo</button>
+  </div>
+
+<script>
+const allSymbols = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'];
+// Using letter-based symbols to avoid any emoji rendering issues, but with colored backgrounds
+const colors = [
+  '#ff6b35','#f7c948','#4ecdc4','#a855f7',
+  '#38bdf8','#fb7185','#34d399','#f97316',
+  '#818cf8','#e879f9','#2dd4bf','#facc15',
+  '#f43f5e','#a3e635','#60a5fa','#c084fc'
+];
+
+// Unicode symbols that render reliably
+const symbols = ['♠','♥','♦','♣','★','◆','▲','●','■','◉','⬟','⬡','⬢','⬣','⬤','◈'];
+
+let totalPairs = 8;
+let flipped = [], matched = [], attempts = 0, busy = false;
+
+function setMode(pairs, btn) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  totalPairs = pairs;
+  const cols = pairs <= 8 ? 4 : pairs <= 12 ? 4 : 4;
+  document.getElementById('board').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  const maxW = pairs <= 8 ? 340 : pairs <= 12 ? 420 : 500;
+  document.getElementById('board').style.maxWidth = maxW + 'px';
+  startGame();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startGame() {
+  flipped = []; matched = []; attempts = 0; busy = false;
+  document.getElementById('attempts').textContent = '0';
+  document.getElementById('pairs').textContent = `0 / ${totalPairs}`;
+  document.getElementById('message').textContent = '';
+
+  const picked = symbols.slice(0, totalPairs);
+  const deck = shuffle([...picked, ...picked]);
+
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+
+  // Adjust columns based on total cards
+  const totalCards = totalPairs * 2;
+  let cols = 4;
+  if (totalCards === 24) cols = 4; // 12 pairs = 24 cards = 6 rows of 4
+  if (totalCards === 32) cols = 4; // 16 pairs = 32 cards = 8 rows of 4
+  board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+  deck.forEach((sym, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.sym = sym;
+    card.dataset.idx = i;
+    card.style.color = colors[symbols.indexOf(sym)];
+
+    card.innerHTML = `
+      <div class="card-face card-back">?</div>
+      <div class="card-face card-front">${sym}</div>
+    `;
+    card.addEventListener('click', () => onCardClick(card));
+    board.appendChild(card);
+  });
+}
+
+function onCardClick(card) {
+  if (busy) return;
+  if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+  if (flipped.length >= 2) return;
+
+  card.classList.add('flipped');
+  flipped.push(card);
+
+  if (flipped.length === 2) {
+    attempts++;
+    document.getElementById('attempts').textContent = attempts;
+    busy = true;
+
+    if (flipped[0].dataset.sym === flipped[1].dataset.sym) {
+      flipped[0].classList.add('matched');
+      flipped[1].classList.add('matched');
+      matched.push(flipped[0].dataset.sym);
+      flipped = [];
+      busy = false;
+      document.getElementById('pairs').textContent = `${matched.length} / ${totalPairs}`;
+      if (matched.length === totalPairs) {
+        document.getElementById('message').textContent = `Parabéns! ${attempts} tentativas.`;
+      }
+    } else {
+      setTimeout(() => {
+        flipped.forEach(c => c.classList.remove('flipped'));
+        flipped = [];
+        busy = false;
+      }, 900);
+    }
+  }
+}
+
+startGame();
+</script>
+</body>
+</html>

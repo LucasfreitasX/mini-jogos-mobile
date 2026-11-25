@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Jogo da Forca</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d1a;
+      --card-bg: #16162a;
+      --accent: #ff6b35;
+      --text: #f0f0f8;
+      --muted: #8888aa;
+      --green: #4ecdc4;
+      --red: #ff4757;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Campo estrelado para o jogo da forca */
+    .stars-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 4s infinite;
+    }
+
+    .star.small {
+      width: 1px;
+      height: 1px;
+      animation-duration: 2s;
+    }
+
+    .star.medium {
+      width: 2px;
+      height: 2px;
+      animation-duration: 3s;
+    }
+
+    .star.large {
+      width: 3px;
+      height: 3px;
+      animation-duration: 4s;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* Tela de carregamento */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--muted);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    nav {
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 1.5rem;
+      animation: slideDown 0.8s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    nav a::before {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover { 
+      color: var(--accent);
+      transform: translateX(5px);
+    }
+    
+    nav a:hover::before {
+      width: 100%;
+    }
+
+    h1 {
+      font-family: 'Bangers', cursive;
+      font-size: 3rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+      margin-bottom: 0.25rem;
+      animation: slideDown 0.8s ease-out 0.2s both;
+      text-shadow: 0 0 20px rgba(255,107,53,0.5);
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hint-cat {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      animation: slideDown 0.8s ease-out 0.4s both;
+    }
+
+    .hint-cat span { 
+      color: var(--text);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .game-area {
+      background: var(--card-bg);
+      border-radius: 20px;
+      border: 2px solid var(--accent);
+      padding: 2rem;
+      max-width: 700px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      animation: slideUp 0.8s ease-out 0.6s both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .game-area::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,107,53,0.1), transparent);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* SVG Gallows */
+    .gallows-wrap { 
+      width: 200px; 
+      height: 200px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    #gallows-svg { 
+      width: 100%; 
+      height: 100%;
+      filter: drop-shadow(0 0 10px rgba(255,107,53,0.3));
+    }
+
+    .body-part { 
+      transition: all 0.5s ease;
+      transform-origin: center;
+    }
+    
+    .body-part.hidden { 
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    .body-part.revealed {
+      animation: bodyReveal 0.8s ease-out;
+    }
+
+    @keyframes bodyReveal {
+      0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(180deg);
+      }
+      50% {
+        transform: scale(1.2) rotate(10deg);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+      }
+    }
+
+    /* Lives */
+    .lives {
+      display: flex;
+      gap: 6px;
+    }
+    .heart {
+      font-size: 1.4rem;
+      transition: filter 0.3s;
+    }
+    .heart.lost {
+      filter: grayscale(1) opacity(0.3);
+    }
+
+    
+    .word-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .letter-slot {
+      width: 34px;
+      height: 44px;
+      border-bottom: 3px solid var(--accent);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 4px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    .letter-slot.space {
+      border-bottom: none;
+      width: 16px;
+    }
+
+    .letter-slot.correct { color: var(--green); }
+    .letter-slot.wrong-reveal { color: var(--red); }
+
+    /* Keyboard */
+    .keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      max-width: 480px;
+    }
+
+    .key {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 2px solid #333355;
+      background: #1e1e38;
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      text-transform: uppercase;
+    }
+
+    .key:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    .key:disabled { opacity: 0.25; cursor: default; transform: none; }
+    .key.hit { background: var(--green); border-color: var(--green); color: #001a1a; opacity: 1; }
+    .key.miss { background: var(--red); border-color: var(--red); color: #fff; opacity: 0.5; }
+
+    /* Message overlay */
+    .message {
+      font-family: 'Bangers', cursive;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .message.win { color: var(--green); }
+    .message.lose { color: var(--red); }
+
+    .btn {
+      padding: 0.7rem 2rem;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: filter 0.2s, transform 0.1s;
+      letter-spacing: 1px;
+    }
+    .btn:hover { filter: brightness(1.2); transform: scale(1.04); }
+
+    .missed-letters {
+      font-size: 0.85rem;
+      color: var(--red);
+      letter-spacing: 2px;
+      font-weight: 600;
+      min-height: 1.2rem;
+      animation: slideUp 0.8s ease-out 1.4s both;
+    }
+
+    /* Animações avançadas */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Partículas de efeito */
+    .particle-burst {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particleBurst 1s ease-out forwards;
+    }
+
+    @keyframes particleBurst {
+      0% {
+        opacity: 1;
+        transform: scale(0);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0) translate(var(--tx), var(--ty));
+      }
+    }
+
+    /* Efeitos de hover para vidas */
+    .heart {
+      font-size: 1.4rem;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .heart::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      background: radial-gradient(circle, rgba(255,107,53,0.3), transparent);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .heart.lost {
+      filter: grayscale(1) opacity(0.3);
+      transform: scale(0.8);
+    }
+    
+    .heart:not(.lost):hover::before {
+      opacity: 1;
+    }
+
+    /* Animações de revelação de letras */
+    .letter-slot.revealed {
+      animation: letterReveal 0.6s ease-out;
+    }
+
+    @keyframes letterReveal {
+      0% {
+        opacity: 0;
+        transform: translateY(20px) rotateX(90deg);
+      }
+      50% {
+        transform: translateY(-5px) rotateX(10deg);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) rotateX(0deg);
+      }
+    }
+
+    .letter-slot.correct { 
+      color: var(--green);
+      animation: correctLetter 0.6s ease-out;
+    }
+    
+    @keyframes correctLetter {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    
+    .letter-slot.wrong-reveal { 
+      color: var(--red);
+      animation: wrongLetter 0.6s ease-out;
+    }
+    
+    @keyframes wrongLetter {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Animações de teclado */
+    .key {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .key::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
+      border-radius: 50%;
+      transition: all 0.4s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    .key:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: 0 10px 20px rgba(255,107,53,0.3);
+    }
+    
+    .key:hover:not(:disabled)::before {
+      width: 100%;
+      height: 100%;
+    }
+
+    .key.hit { 
+      animation: keyHit 0.4s ease-out;
+    }
+    
+    @keyframes keyHit {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    .key.miss { 
+      animation: keyMiss 0.5s ease-out;
+    }
+    
+    @keyframes keyMiss {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Animações de mensagem */
+    .message {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    
+    .message.show {
+      animation: messageSlide 0.8s ease-out forwards;
+    }
+    
+    .message.win { 
+      text-shadow: 0 0 30px rgba(78,205,196,0.8);
+      animation: winMessage 1s ease-out;
+    }
+    
+    .message.lose { 
+      text-shadow: 0 0 30px rgba(255,71,87,0.8);
+      animation: loseMessage 1s ease-out;
+    }
+    
+    @keyframes messageSlide {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes winMessage {
+      0% { transform: scale(0.5) rotate(-10deg); }
+      50% { transform: scale(1.1) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    
+    @keyframes loseMessage {
+      0% { transform: scale(0.5); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    /* Animações de botão */
+    .btn {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+      transition: all 0.5s ease;
+      transform: translate(-50%, -50%);
+    }
+    
+    .btn:hover { 
+      transform: scale(1.04) translateY(-2px);
+      box-shadow: 0 10px 25px rgba(255,107,53,0.4);
+    }
+    
+    .btn:hover::before {
+      width: 300%;
+      height: 300%;
+    }
+  </style>
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <script src="pwa.js" defer></script>
+</head>
+<!-- Tela de carregamento -->
+<div class="loading-screen" id="loading">
+  <div class="loader"></div>
+  <div class="loading-text">CARREGANDO...</div>
+</div>
+
+<!-- Campo estrelado animado -->
+<div class="stars-bg" id="stars"></div>
+
+<body>
+  <nav><a href="index.html">← Voltar ao Menu</a></nav>
+  <h1>🪢 Jogo da Forca</h1>
+  <div class="hint-cat">Categoria: <span id="cat-display">—</span></div>
+
+  <div class="game-area">
+    <div class="gallows-wrap">
+      <svg id="gallows-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Gallows structure always visible -->
+        <line x1="20" y1="190" x2="180" y2="190" stroke="#555577" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="190" x2="60" y2="20" stroke="#555577" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="20" x2="130" y2="20" stroke="#555577" stroke-width="4" stroke-linecap="round"/>
+        <line x1="130" y1="20" x2="130" y2="45" stroke="#555577" stroke-width="3" stroke-linecap="round"/>
+        <!-- Body parts (hidden initially) -->
+        <circle id="bp-head" class="body-part hidden" cx="130" cy="60" r="15" fill="none" stroke="#ff6b35" stroke-width="3"/>
+        <line id="bp-body" class="body-part hidden" x1="130" y1="75" x2="130" y2="130" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+        <line id="bp-larm" class="body-part hidden" x1="130" y1="90" x2="105" y2="115" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+        <line id="bp-rarm" class="body-part hidden" x1="130" y1="90" x2="155" y2="115" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+        <line id="bp-lleg" class="body-part hidden" x1="130" y1="130" x2="108" y2="160" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+        <line id="bp-rleg" class="body-part hidden" x1="130" y1="130" x2="152" y2="160" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="lives" id="lives-display"></div>
+
+    <div class="word-display" id="word-display"></div>
+
+    <div class="missed-letters" id="missed-letters"></div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="message" id="message"></div>
+
+    <button class="btn" id="new-game-btn">Nova Palavra</button>
+  </div>
+
+<script>
+const words = [
+  { word: 'javascript', cat: 'Tecnologia' },
+  { word: 'programacao', cat: 'Tecnologia' },
+  { word: 'computador', cat: 'Tecnologia' },
+  { word: 'internet', cat: 'Tecnologia' },
+  { word: 'brasil', cat: 'Geografia' },
+  { word: 'amazonia', cat: 'Geografia' },
+  { word: 'carnaval', cat: 'Cultura' },
+  { word: 'futebol', cat: 'Esportes' },
+  { word: 'capoeira', cat: 'Esportes' },
+  { word: 'chocolate', cat: 'Comida' },
+  { word: 'abacaxi', cat: 'Comida' },
+  { word: 'elefante', cat: 'Animais' },
+  { word: 'borboleta', cat: 'Animais' },
+  { word: 'girafa', cat: 'Animais' },
+  { word: 'astronauta', cat: 'Profissões' },
+  { word: 'medicina', cat: 'Profissões' },
+  { word: 'cozinheiro', cat: 'Profissões' },
+  { word: 'universo', cat: 'Ciência' },
+  { word: 'galaxia', cat: 'Ciência' },
+  { word: 'quimica', cat: 'Ciência' },
+  { word: 'big bang', cat: 'Ciência' },
+  { word: 'estrela', cat: 'Ciência' },
+  { word: 'sol', cat: 'Ciência' },
+  { word: 'marte', cat: 'Ciência' },
+  { word: 'buraco negro', cat: 'Ciência' },
+  { word: 'professor', cat: 'Profissões' },
+  { word: 'mecânico', cat: 'Profissões' },
+  { word: 'enfermeiro', cat: 'Profissões' },
+  { word: 'cantor', cat: 'Profissões' },
+  { word: 'engenheiro', cat: 'Profissões' },
+  { word: 'carneiro', cat: 'Animais' },
+  { word: 'mamute', cat: 'Animais' },
+  { word: 'tigre', cat: 'Animais' },
+  { word: 'cachorro', cat: 'Animais' },
+  { word: 'bode', cat: 'Animais' },
+  { word: 'vaca', cat: 'Animais' },
+  { word: 'boi', cat: 'Animais' },
+  { word: 'python', cat: 'Tecnologia' },
+  { word: 'css', cat: 'Tecnologia' },
+  { word: 'softwere', cat: 'Tecnologia' },
+  { word: 'computador', cat: 'Tecnologia' },
+  { word: 'celular', cat: 'Tecnologia' },
+  { word: 'monitor', cat: 'Tecnologia' },
+  { word: 'ipad', cat: 'Tecnologia' },
+  { word: 'fone', cat: 'Tecnologia' },
+  { word: 'notebok', cat: 'Tecnologia' },
+  { word: 'console', cat: 'Tecnologia' },
+  { word: 'inteligencia artificial', cat: 'Tecnologia' },
+  { word: 'morango', cat: 'Comida' },
+  { word: 'festa junina', cat: 'Cultura' },
+  { word: 'folia de reis', cat: 'Cultura' },
+  { word: 'homem aranha', cat: 'Personagem' },
+  { word: 'homem de ferro', cat: 'Personagem' },
+  { word: 'capitao america', cat: 'Personagem' },
+  { word: 'naruto', cat: 'Personagem' },
+  { word: 'sasuske', cat: 'Personagem' },
+  { word: 'gaara', cat: 'Personagem' },
+  { word: 'goku', cat: 'Personagem' },
+  { word: 'vegeta', cat: 'Personagem' },
+  { word: 'funk', cat: 'Estilos musicais' },
+  { word: 'rap', cat: 'Estilos musicais' },
+  { word: 'pagode', cat: 'Estilos musicais' },
+  { word: 'pop', cat: 'Estilos musicais' },
+  { word: 'sertanejo', cat: 'Estilos musicais' },
+  { word: 'samba', cat: 'Estilos musicais' },
+  { word: 'mpb', cat: 'Estilos musicais' },
+  { word: 'bossa nova', cat: 'Estilos musicais' },
+  { word: 'rock', cat: 'Estilos musicais' },
+  { word: 'eletronica', cat: 'Estilos musicais' },
+  { word: 'jazz', cat: 'Estilos musicais' },
+];
+
+const MAX_ERRORS = 6;
+const bodyParts = ['bp-head','bp-body','bp-larm','bp-rarm','bp-lleg','bp-rleg'];
+const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
+let currentWord = '';
+let currentCat = '';
+let guessed = new Set();
+let errors = 0;
+let gameOver = false;
+
+function normalize(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function startGame() {
+  const pick = words[Math.floor(Math.random() * words.length)];
+  currentWord = normalize(pick.word);
+  currentCat = pick.cat;
+  guessed = new Set();
+  errors = 0;
+  gameOver = false;
+
+  document.getElementById('cat-display').textContent = currentCat;
+  document.getElementById('message').textContent = '';
+  renderAll();
+}
+
+function renderAll() {
+  renderWord();
+  renderLives();
+  renderGallows();
+  renderKeyboard();
+  renderMissed();
+}
+
+function renderWord() {
+  const wd = document.getElementById('word-display');
+  wd.innerHTML = '';
+  for (const ch of currentWord) {
+    const slot = document.createElement('div');
+    if (ch === ' ') {
+      slot.className = 'letter-slot space';
+    } else {
+      slot.className = 'letter-slot';
+      if (guessed.has(ch)) {
+        slot.textContent = ch.toUpperCase();
+        slot.classList.add('correct');
+      }
+    }
+    wd.appendChild(slot);
+  }
+}
+
+function renderLives() {
+  const ld = document.getElementById('lives-display');
+  ld.innerHTML = '';
+  for (let i = 0; i < MAX_ERRORS; i++) {
+    const h = document.createElement('span');
+    h.className = 'heart' + (i < errors ? ' lost' : '');
+    h.textContent = '❤️';
+    ld.appendChild(h);
+  }
+}
+
+function renderGallows() {
+  bodyParts.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (i < errors) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+}
+
+function renderKeyboard() {
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+  for (const letter of alphabet) {
+    const btn = document.createElement('button');
+    btn.className = 'key';
+    btn.textContent = letter.toUpperCase();
+    btn.disabled = guessed.has(letter) || gameOver;
+    if (guessed.has(letter)) {
+      btn.classList.add(currentWord.includes(letter) ? 'hit' : 'miss');
+    }
+    btn.addEventListener('click', () => guess(letter));
+    kb.appendChild(btn);
+  }
+}
+
+function renderMissed() {
+  const missed = [...guessed].filter(l => !currentWord.includes(l));
+  const ml = document.getElementById('missed-letters');
+  ml.textContent = missed.length ? 'Erradas: ' + missed.join(' ').toUpperCase() : '';
+}
+
+function guess(letter) {
+  if (gameOver || guessed.has(letter)) return;
+  guessed.add(letter);
+
+  if (!currentWord.includes(letter)) {
+    errors++;
+  }
+
+  renderAll();
+  checkEnd();
+}
+
+function checkEnd() {
+  const wordChars = [...new Set(currentWord.replace(/ /g, '').split(''))];
+  const won = wordChars.every(c => guessed.has(c));
+  const lost = errors >= MAX_ERRORS;
+
+  if (won || lost) {
+    gameOver = true;
+    const msg = document.getElementById('message');
+    if (won) {
+      msg.textContent = '🎉 Você ganhou!';
+      msg.className = 'message win';
+    } else {
+      msg.textContent = '💀 A palavra era: ' + currentWord.toUpperCase();
+      msg.className = 'message lose';
+      // Reveal missing letters
+      document.querySelectorAll('.letter-slot:not(.correct):not(.space)').forEach(s => {
+        s.classList.add('wrong-reveal');
+        const idx = [...document.getElementById('word-display').children].indexOf(s);
+        s.textContent = currentWord[idx].toUpperCase();
+      });
+    }
+    renderKeyboard();
+  }
+}
+
+// Keyboard input
+document.addEventListener('keydown', e => {
+  const key = e.key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (alphabet.includes(key) && !gameOver) guess(key);
+});
+
+document.getElementById('new-game-btn').addEventListener('click', startGame);
+
+// Criar campo estrelado
+function createStars() {
+  const starsContainer = document.getElementById('stars');
+  const numberOfStars = 80;
+
+  for (let i = 0; i < numberOfStars; i++) {
+    const star = document.createElement('div');
+    star.className = `star ${['small', 'medium', 'large'][Math.floor(Math.random() * 3)]}`;
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 4 + 's';
+    starsContainer.appendChild(star);
+  }
+}
+
+// Criar partículas de efeito
+function createParticleBurst(x, y, color = '#ff6b35') {
+  for (let i = 0; i < 8; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle-burst';
+    particle.style.left = x + 'px';
+    particle.style.top = y + 'px';
+    particle.style.background = color;
+    
+    const angle = (i / 8) * Math.PI * 2;
+    const distance = 50 + Math.random() * 50;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    
+    particle.style.setProperty('--tx', tx + 'px');
+    particle.style.setProperty('--ty', ty + 'px');
+    
+    document.body.appendChild(particle);
+    
+    setTimeout(() => {
+      particle.remove();
+    }, 1000);
+  }
+}
+
+// Animações melhoradas para letras
+function animateLetterSlot(slot, isCorrect) {
+  slot.classList.add('revealed');
+  if (isCorrect) {
+    slot.classList.add('correct');
+  } else {
+    slot.classList.add('wrong-reveal');
+  }
+  
+  // Criar partículas no local da letra
+  const rect = slot.getBoundingClientRect();
+  createParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, isCorrect ? '#4ecdc4' : '#ff4757');
+}
+
+// Animações melhoradas para teclas
+function animateKey(key, isHit) {
+  if (isHit) {
+    key.classList.add('hit');
+  } else {
+    key.classList.add('miss');
+  }
+}
+
+// Animações de mensagem
+function showMessage(text, type) {
+  const message = document.getElementById('message');
+  message.textContent = text;
+  message.className = `message ${type} show`;
+}
+
+// Inicialização
+window.addEventListener('load', function() {
+  createStars();
+  
+  // Esconder tela de carregamento após 1 segundo
+  setTimeout(() => {
+    const loadingScreen = document.getElementById('loading');
+    loadingScreen.classList.add('hidden');
+  }, 1000);
+});
+
+// Modificações na função startGame
+const originalStartGame = startGame;
+startGame = function() {
+  originalStartGame();
+  
+  // Adicionar animações iniciais
+  const bodyParts = document.querySelectorAll('.body-part');
+  bodyParts.forEach((part, index) => {
+    part.style.transitionDelay = `${index * 0.1}s`;
+  });
+};
+
+// Modificações nas funções existentes
+const originalRenderWord = renderWord;
+renderWord = function() {
+  originalRenderWord();
+  
+  // Adicionar animações às letras reveladas
+  const slots = document.querySelectorAll('.letter-slot');
+  slots.forEach(slot => {
+    if (slot.textContent && slot.textContent !== '_') {
+      const isCorrect = slot.classList.contains('correct');
+      animateLetterSlot(slot, isCorrect);
+    }
+  });
+};
+
+const originalRenderKeyboard = renderKeyboard;
+renderKeyboard = function() {
+  originalRenderKeyboard();
+  
+  // Adicionar animações às teclas
+  const keys = document.querySelectorAll('.key');
+  keys.forEach(key => {
+    if (key.disabled) {
+      const isHit = key.classList.contains('hit');
+      animateKey(key, isHit);
+    }
+  });
+};
+
+const originalCheckEnd = checkEnd;
+checkEnd = function() {
+  originalCheckEnd();
+  
+  // Adicionar efeitos de vitória/derrota
+  const won = document.querySelector('.message.win');
+  const lost = document.querySelector('.message.lose');
+  
+  if (won) {
+    // Criar explosão de partículas verde
+    const gameArea = document.querySelector('.game-area');
+    const rect = gameArea.getBoundingClientRect();
+    createParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#4ecdc4');
+  } else if (lost) {
+    // Criar explosão de partículas vermelha
+    const gameArea = document.querySelector('.game-area');
+    const rect = gameArea.getBoundingClientRect();
+    createParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#ff4757');
+  }
+};
+
+startGame();
+</script>
+</body>
+</html>
